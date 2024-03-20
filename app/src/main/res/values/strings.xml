@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Ultralite SDK Sample</string>
+    <string name="app_name">Vuzix Z100</string>
 
-    <string name="controller_app_installed">SDK available</string>
-    <string name="linked_to_glasses">Linked to glasses</string>
-    <string name="name">Name:</string>
-    <string name="glasses_connected">Glasses connected</string>
+    <string name="controller_app_installed">SDK aggiornato</string>
+    <string name="linked_to_glasses">Associato con occhiali</string>
+    <string name="name">Nome:</string>
+    <string name="glasses_connected">Connesso con occhiali</string>
     <string name="run_demo">Run Demo</string>
     <string name="send_notification">Send Notification</string>
 </resources>
