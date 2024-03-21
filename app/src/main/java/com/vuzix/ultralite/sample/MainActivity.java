@@ -5,13 +5,19 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.Image;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -46,12 +52,13 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends VuzixActivity {
 
     private static final String TAG = MainActivity.class.getName();
-    private Api api;
     private Model model;
     private TextView currentText;
+    private ImageView nextBleCheckView, backBleCheckView;
+    private Button next, back;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,6 +70,10 @@ public class MainActivity extends AppCompatActivity {
         ImageView loginImageView = findViewById(R.id.login);
         TextView nameTextView = findViewById(R.id.name);
         currentText = findViewById(R.id.current);
+        nextBleCheckView = findViewById(R.id.next);
+        backBleCheckView = findViewById(R.id.back);
+        next = findViewById(R.id.go_next);
+        back = findViewById(R.id.go_back);
         ImageView connectedImageView = findViewById(R.id.connected);
         Button demoButton = findViewById(R.id.run_demo);
         Button notificationButton = findViewById(R.id.send_notification);
@@ -99,23 +110,6 @@ public class MainActivity extends AppCompatActivity {
                 ultralite.sendNotification("Ultralite SDK Sample", "Hello from a sample app!",
                         loadLVGLImage(this, R.drawable.rocket)));
 
-        SharedPreferences sharedPreferences = getSharedPreferences("blechat", MODE_PRIVATE);
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(new RetrofitInterceptor(sharedPreferences))
-                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .callTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .build();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create())
-                .baseUrl("https://lostotores.it")
-                .client(okHttpClient)
-                .build();
-
-        api = retrofit.create(Api.class);
-
-        Call<LoginResponse> login = api.login(new LoginRequest("super_admin@lostotores.it", "superadmin451."));
         login.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
@@ -139,10 +133,13 @@ public class MainActivity extends AppCompatActivity {
 
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
-                // Your code to be executed every 5 seconds goes here
                 getLastMessage();
             }
         }, delay, period);
+
+        next.setOnClickListener(view -> goNextPage());
+
+        back.setOnClickListener(view -> goBackPage());
     }
 
     private Message lastMessage;
@@ -156,8 +153,19 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "messaggio uguale : " + response.body().getText());
                     } else {
                         Log.d(TAG, "nuovo messaggio : " + response.body().getText());
-                        model.showMessage(response.body().getText());
-                        currentText.setText(response.body().getText());
+                        if (response.body().getText().length() > chunk) {
+                            strings = splitString(response.body().getText(), chunk);
+                            pages = strings.length;
+                            page = 0;
+                            Log.d(TAG, "diviso in pagine: " + pages);
+                            saveVariables(MainActivity.this, strings, pages, page);
+                            updateTextOnScreen(strings[page]);
+                            setTextWithBold(currentText, response.body().getText(), strings[page]);
+                        } else {
+                            updateTextOnScreen(response.body().getText());
+                            setTextWithBold(currentText, response.body().getText(), response.body().getText());
+                            saveVariables(MainActivity.this, new String[]{response.body().getText()}, pages, page);
+                        }
                     }
                     lastMessage = response.body();
                 }
@@ -171,8 +179,59 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void toastIt(String s) {
-        Toast.makeText(this, s, Toast.LENGTH_LONG).show();
+    private boolean goNextPage() {
+        Log.d(TAG, "received next action");
+        if (strings != null && strings.length > 0) {
+            page++;
+            if (page == pages) {
+                page = 0;
+                pages = 0;
+                strings = null;
+                saveVariables(MainActivity.this, new String[]{}, pages, page);
+                updateTextOnScreen("");
+                return true;
+            }
+            updateTextOnScreen(strings[page]);
+            saveVariables(MainActivity.this, strings, pages, page);
+        }
+        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+        return false;
+    }
+
+    private boolean goBackPage() {
+        Log.d(TAG, "received back action");
+        if (strings != null && strings.length > 0) {
+            if (page > 0) {
+                page--;
+                saveVariables(MainActivity.this, new String[]{}, pages, page);
+                updateTextOnScreen(strings[page]);
+            }
+        }
+        backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+        return false;
+    }
+
+    private void updateTextOnScreen(String text) {
+        //TODO vedere se fare update
+        model.showMessage(text);
+    }
+
+    private static void setTextWithBold(TextView textView, String fullText, String textToBold) {
+        // Creazione di un oggetto SpannableStringBuilder per manipolare il testo
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        // Aggiunta del testo completo
+        builder.append(fullText);
+
+        // Trovare l'indice della prima occorrenza della sottostringa
+        int startIndex = fullText.indexOf(textToBold);
+        if (startIndex != -1) {
+            // Applicare lo stile grassetto alla sottostringa trovata
+            builder.setSpan(new StyleSpan(Typeface.BOLD), startIndex, startIndex + textToBold.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        // Impostare il testo con lo stile applicato alla TextView
+        textView.setText(builder);
     }
 
     public static class Model extends AndroidViewModel {
@@ -405,6 +464,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private static class Stop extends Exception {
+
         private final boolean error;
 
         public Stop(boolean error) {
