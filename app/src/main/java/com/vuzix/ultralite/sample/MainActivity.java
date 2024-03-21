@@ -40,9 +40,11 @@ import com.vuzix.ultralite.TextWrapMode;
 import com.vuzix.ultralite.UltraliteColor;
 import com.vuzix.ultralite.UltraliteSDK;
 
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -189,10 +191,12 @@ public class MainActivity extends VuzixActivity {
                 strings = null;
                 saveVariables(MainActivity.this, new String[]{}, pages, page);
                 updateTextOnScreen("");
+                setTextWithBold(currentText, "", "");
                 return true;
             }
             updateTextOnScreen(strings[page]);
             saveVariables(MainActivity.this, strings, pages, page);
+            setTextWithBold(currentText, String.join("", strings), strings[page]);
         }
         nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         return false;
@@ -205,6 +209,7 @@ public class MainActivity extends VuzixActivity {
                 page--;
                 saveVariables(MainActivity.this, new String[]{}, pages, page);
                 updateTextOnScreen(strings[page]);
+                setTextWithBold(currentText, String.join("", strings), strings[page]);
             }
         }
         backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
