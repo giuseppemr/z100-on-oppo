@@ -3,12 +3,12 @@ package com.vuzix.ultralite.sample;
 import java.util.List;
 
 public class LoginResponse {
-    private String token;
-    private String id;
-    private String name;
-    private String surname;
-    private String email;
-    private List<String> roles;
+    private final String token;
+    private final String id;
+    private final String name;
+    private final String surname;
+    private final String email;
+    private final List<String> roles;
 
     public LoginResponse(String token, String id, String name, String surname, String email, List<String> roles) {
         this.token = token;

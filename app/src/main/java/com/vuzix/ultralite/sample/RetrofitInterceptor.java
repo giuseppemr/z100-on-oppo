@@ -10,7 +10,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class RetrofitInterceptor implements Interceptor {
-    private SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
     public RetrofitInterceptor(SharedPreferences sharedPreferences) {
         this.sharedPreferences = sharedPreferences;

@@ -3,10 +3,10 @@ package com.vuzix.ultralite.sample;
 import java.util.Objects;
 
 public class Message {
-    private String text;
-    private String timestamp;
-    private String photo;
-    private MessageType type;
+    private final String text;
+    private final String timestamp;
+    private final String photo;
+    private final MessageType type;
 
     public Message(String text, String timestamp, String photo, MessageType type) {
         this.text = text;
