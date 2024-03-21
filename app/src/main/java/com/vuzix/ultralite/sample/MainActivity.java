@@ -1,8 +1,19 @@
 package com.vuzix.ultralite.sample;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Application;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Typeface;
@@ -26,6 +37,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
@@ -39,8 +51,12 @@ import com.vuzix.ultralite.TextAlignment;
 import com.vuzix.ultralite.TextWrapMode;
 import com.vuzix.ultralite.UltraliteColor;
 import com.vuzix.ultralite.UltraliteSDK;
+import com.vuzix.ultralite.sample.tags.BlackTag;
+import com.vuzix.ultralite.sample.tags.PinkTag;
+import com.vuzix.ultralite.sample.tags.WhiteTag;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -142,6 +158,10 @@ public class MainActivity extends VuzixActivity {
         next.setOnClickListener(view -> goNextPage());
 
         back.setOnClickListener(view -> goBackPage());
+
+        btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
+        startScanning();
     }
 
     private Message lastMessage;
@@ -486,5 +506,184 @@ public class MainActivity extends VuzixActivity {
         BitmapDrawable drawable = (BitmapDrawable) ResourcesCompat.getDrawable(
                 context.getResources(), resource, context.getTheme());
         return drawable.getBitmap();
+    }
+
+    //BLUETOOTH LE BUTTONS
+    private final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private BluetoothManager btManager;
+    private BluetoothGatt blackGatt, whiteGatt, pinkGatt;
+    BluetoothAdapter.LeScanCallback leScanCallback = (device, rssi, scanRecord) -> {
+        switch (device.getAddress()) {
+            case BlackTag.mac:
+                BlackTag.device = device;
+            case PinkTag.mac:
+                PinkTag.device = device;
+            case WhiteTag.mac:
+                WhiteTag.device = device;
+                if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                @SuppressLint("MissingPermission")
+                List<BluetoothDevice> devices = btManager.getConnectedDevices(BluetoothProfile.GATT);
+                Log.e(TAG, "FOUND " + getButton(device.getAddress()));
+                if (!devices.contains(device)) {
+                    Log.e(TAG, "TRYING TO CONNECT TO " + getButton(device.getAddress()));
+                    connectToDevice(device);
+                } else {
+                    Log.e(TAG, "ALREADY CONNECTED TO " + getButton(device.getAddress()));
+                }
+                break;
+        }
+    };
+
+    private void connectToDevice(BluetoothDevice device) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (device.getAddress().equals(BlackTag.mac)) {
+            blackGatt = device.connectGatt(this, false, gattCallback);
+        } else if (device.getAddress().equals(PinkTag.mac)) {
+            pinkGatt = device.connectGatt(this, false, gattCallback);
+        } else if (device.getAddress().equals(WhiteTag.mac)) {
+            whiteGatt = device.connectGatt(this, false, gattCallback);
+        }
+    }
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                Log.e(TAG, "CONNESSO CON " + getButton(gatt.getDevice().getAddress()));
+                if (isBlackTag(gatt)) {
+                    blackGatt.discoverServices();
+                } else if (isPinkTag(gatt)) {
+                    pinkGatt.discoverServices();
+                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+                } else {
+                    whiteGatt.discoverServices();
+                    nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+                }
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.e(TAG, "DISCONNESSO CON " + getButton(gatt.getDevice().getAddress()));
+                if (isBlackTag(gatt)) {
+                    blackGatt.close();
+                    blackGatt = null;
+                } else if (isPinkTag(gatt)) {
+                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                    pinkGatt.close();
+                    pinkGatt = null;
+                } else {
+                    nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                    whiteGatt.close();
+                    whiteGatt = null;
+                }
+            }
+        }
+        @SuppressLint("MissingPermission")
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                BluetoothDevice device = gatt.getDevice();
+                String tagServiceUuid = null;
+                String tagCharacteristicUuid = null;
+                String tagType = null;
+
+                if (device.equals(BlackTag.device)) {
+                    tagServiceUuid = BlackTag.servicestr;
+                    tagCharacteristicUuid = BlackTag.charactstr;
+                    tagType = "BLACK";
+                } else if (device.equals(PinkTag.device)) {
+                    tagServiceUuid = PinkTag.servicestr;
+                    tagCharacteristicUuid = PinkTag.charactstr;
+                    tagType = "PINK";
+                } else if (device.equals(WhiteTag.device)) {
+                    tagServiceUuid = WhiteTag.servicestr;
+                    tagCharacteristicUuid = WhiteTag.charactstr;
+                    tagType = "WHITE";
+                }
+
+                if (tagServiceUuid != null) {
+                    List<BluetoothGattService> services = gatt.getServices();
+                    for (BluetoothGattService service : services) {
+                        String serviceUUID = service.getUuid().toString();
+                        if (serviceUUID.equals(tagServiceUuid)) {
+                            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+                            for (BluetoothGattCharacteristic characteristic : characteristics) {
+                                String characteristicUUID = characteristic.getUuid().toString();
+                                if (characteristicUUID.equals(tagCharacteristicUuid)) {
+                                    gatt.setCharacteristicNotification(characteristic, true);
+                                    Log.e(TAG, "ENABLING " + tagType + " CHAR");
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            // Questo metodo viene chiamato quando i dati notificati sono ricevuti.
+            byte[] data = characteristic.getValue();
+            //TODO qua mandare il testo giusto direttamente
+            byte[] send;
+            if (isBlackTag(gatt)) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "foto action from button", Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "foto action");
+                send = "take".getBytes();
+            } else if (isPinkTag(gatt)) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "back action from button", Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "back action");
+                send = "back".getBytes();
+            } else {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "next action from button", Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "next action");
+                send = "next".getBytes();
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                byte[] data = characteristic.getValue();
+                String value = new String(data);
+            }
+        }
+    };
+
+    @Override
+    protected void onDestroy() {
+        Log.e(TAG, "CLEANUP");
+        stopScanning();
+        super.onDestroy();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void startScanning() {
+        bluetoothAdapter.startLeScan(leScanCallback);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void stopScanning() {
+        if (blackGatt != null) {
+            blackGatt.close();
+            blackGatt.disconnect();
+        }
+        if (whiteGatt != null) {
+            whiteGatt.close();
+            whiteGatt.disconnect();
+        }
+        if (pinkGatt != null) {
+            pinkGatt.close();
+            pinkGatt.disconnect();
+        }
+        if (bluetoothAdapter != null && leScanCallback != null) {
+            bluetoothAdapter.stopLeScan(leScanCallback);
+        }
     }
 }

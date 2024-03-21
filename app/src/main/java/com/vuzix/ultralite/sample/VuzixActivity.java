@@ -1,14 +1,32 @@
 package com.vuzix.ultralite.sample;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import com.vuzix.ultralite.sample.tags.BlackTag;
+import com.vuzix.ultralite.sample.tags.PinkTag;
+import com.vuzix.ultralite.sample.tags.WhiteTag;
+
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -50,6 +68,19 @@ public class VuzixActivity extends AppCompatActivity {
         api = retrofit.create(Api.class);
 
         login = api.login(new LoginRequest("super_admin@lostotores.it", "superadmin451."));
+
+        String[] permissions = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+        };
+        int requestCode = 1;
+
+        ActivityCompat.requestPermissions(this, permissions, requestCode);
+
+
+        String[] permissionArray = {Manifest.permission.FOREGROUND_SERVICE};
+        ActivityCompat.requestPermissions(this, permissionArray, 0);
     }
 
     String[] splitString(String input, int substringLength) {
@@ -125,5 +156,28 @@ public class VuzixActivity extends AppCompatActivity {
 
     void toastIt(String s) {
         Toast.makeText(this, s, Toast.LENGTH_LONG).show();
+    }
+
+
+    @SuppressLint("MissingPermission")
+    public String getButton(String address) {
+        if (address.equals(BlackTag.mac)) {
+            return "BLACK TAG";
+        }
+        if (address.equals(WhiteTag.mac)) {
+            return "WHITE TAG";
+        }
+        if (address.equals(PinkTag.mac)) {
+            return "PINK TAG";
+        }
+        return null;
+    }
+
+    public boolean isBlackTag(BluetoothGatt gatt) {
+        return gatt.getDevice().getAddress().equals(BlackTag.mac);
+    }
+
+    public boolean isPinkTag(BluetoothGatt gatt) {
+        return gatt.getDevice().getAddress().equals(PinkTag.mac);
     }
 }
