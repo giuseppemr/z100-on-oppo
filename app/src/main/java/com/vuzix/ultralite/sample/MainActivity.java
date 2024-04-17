@@ -33,6 +33,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
@@ -63,7 +64,7 @@ public class MainActivity extends VuzixActivity {
     private static final String TAG = MainActivity.class.getName();
     private Model model;
     private TextView currentText;
-    private ImageView nextBleCheckView, backBleCheckView;
+    private ImageView loginImageView, nextBleCheckView, backBleCheckView;
     private Button next, back;
 
     @Override
@@ -73,7 +74,7 @@ public class MainActivity extends VuzixActivity {
 
         ImageView installedImageView = findViewById(R.id.installed);
         ImageView linkedImageView = findViewById(R.id.linked);
-        ImageView loginImageView = findViewById(R.id.login);
+        loginImageView = findViewById(R.id.login);
         TextView nameTextView = findViewById(R.id.name);
         currentText = findViewById(R.id.current);
         nextBleCheckView = findViewById(R.id.next);
@@ -116,6 +117,56 @@ public class MainActivity extends VuzixActivity {
                 ultralite.sendNotification("Ultralite SDK Sample", "Hello from a sample app!",
                         loadLVGLImage(this, R.drawable.rocket)));
 
+        checkPermissions();
+    }
+
+    private void checkPermissions() {
+        String[] permissions = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+        };
+        int requestCode = 1;
+
+        boolean allPermissionsGranted = true;
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                allPermissionsGranted = false;
+                break;
+            }
+        }
+
+        if (allPermissionsGranted) {
+            start();
+        } else {
+            ActivityCompat.requestPermissions(this, permissions, requestCode);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 1) {
+            boolean allPermissionsGranted = true;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    allPermissionsGranted = false;
+                    break;
+                }
+            }
+
+            if (allPermissionsGranted) {
+                start();
+            } else {
+                // Gli utenti hanno negato uno o più permessi, gestisci di conseguenza
+            }
+        }
+    }
+
+    private void start() {
         login.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
@@ -151,7 +202,6 @@ public class MainActivity extends VuzixActivity {
 
         startScanning();
     }
-
     private Message lastMessage;
 
     private void getLastMessage() {
@@ -225,7 +275,6 @@ public class MainActivity extends VuzixActivity {
     }
 
     private void updateTextOnScreen(String text) {
-        //TODO vedere se fare update
         model.showMessage(text);
     }
 
@@ -275,27 +324,15 @@ public class MainActivity extends VuzixActivity {
                 new Thread(() -> {
                     running.postValue(true);
                     try {
+                        ultralite.getCanvas().clear();
+                        ultralite.setFont(null, Typeface.NORMAL, 36);
                         ultralite.setLayout(Layout.CANVAS, 0, true);
 
-                        int textId = ultralite.getCanvas().createText(message, TextAlignment.AUTO, UltraliteColor.WHITE, Anchor.CENTER, 0, 0, 640, -1, TextWrapMode.WRAP, true);
+                        int textId = ultralite.getCanvas().createText(message, TextAlignment.CENTER, UltraliteColor.WHITE, Anchor.CENTER, 50, 0, 500, -1, TextWrapMode.WRAP, true);
                         if (textId == -1) {
                             throw new Stop(true);
                         }
                         ultralite.getCanvas().commit();
-                        pause(5000);
-
-                        ultralite.getCanvas().updateText(textId, "The text can be changed.");
-                        ultralite.getCanvas().commit();
-                        pause();
-
-                        ultralite.getCanvas().updateText(textId, "The text can be moved.");
-                        ultralite.getCanvas().moveText(textId, Anchor.TOP_CENTER, 0, 0);
-                        ultralite.getCanvas().commit();
-                        pause();
-
-                        ultralite.getCanvas().updateText(textId, "If requested, the text can wrap if it grows too large to show on a single line.");
-                        ultralite.getCanvas().commit();
-                        pause(5000);
                     } catch (Stop stop) {
                         ultralite.releaseControl();
                         if (stop.error) {
@@ -557,14 +594,17 @@ public class MainActivity extends VuzixActivity {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.e(TAG, "DISCONNESSO CON " + getButton(gatt.getDevice().getAddress()));
                 if (isBlackTag(gatt)) {
+                    blackGatt.disconnect();
                     blackGatt.close();
                     blackGatt = null;
                 } else if (isPinkTag(gatt)) {
                     backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                    pinkGatt.disconnect();
                     pinkGatt.close();
                     pinkGatt = null;
                 } else {
                     nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                    whiteGatt.disconnect();
                     whiteGatt.close();
                     whiteGatt = null;
                 }
@@ -618,20 +658,17 @@ public class MainActivity extends VuzixActivity {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             // Questo metodo viene chiamato quando i dati notificati sono ricevuti.
             byte[] data = characteristic.getValue();
-            //TODO qua mandare il testo giusto direttamente
-            byte[] send;
             if (isBlackTag(gatt)) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "foto action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "foto action");
-                send = "take".getBytes();
             } else if (isPinkTag(gatt)) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "back action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "back action");
-                send = "back".getBytes();
+                goBackPage();
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "next action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "next action");
-                send = "next".getBytes();
+                goNextPage();
             }
         }
 

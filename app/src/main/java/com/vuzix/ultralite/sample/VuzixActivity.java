@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothGatt;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.vuzix.ultralite.sample.tags.BlackTag;
 import com.vuzix.ultralite.sample.tags.PinkTag;
@@ -41,6 +43,7 @@ public class VuzixActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sharedPreferences = getSharedPreferences("z100", MODE_PRIVATE);
+        loadVariables(this);
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(new RetrofitInterceptor(sharedPreferences))
@@ -59,18 +62,10 @@ public class VuzixActivity extends AppCompatActivity {
 
         login = api.login(new LoginRequest("super_admin@lostotores.it", "superadmin451."));
 
-        String[] permissions = {
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_SCAN
-        };
-        int requestCode = 1;
-
-        ActivityCompat.requestPermissions(this, permissions, requestCode);
 
 
-        String[] permissionArray = {Manifest.permission.FOREGROUND_SERVICE};
-        ActivityCompat.requestPermissions(this, permissionArray, 0);
+        /*String[] permissionArray = {Manifest.permission.FOREGROUND_SERVICE};
+        ActivityCompat.requestPermissions(this, permissionArray, 0);*/
     }
 
     String[] splitString(String input, int substringLength) {
