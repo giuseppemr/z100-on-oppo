@@ -50,6 +50,7 @@ import com.vuzix.ultralite.TextWrapMode;
 import com.vuzix.ultralite.UltraliteColor;
 import com.vuzix.ultralite.UltraliteSDK;
 import com.vuzix.ultralite.sample.tags.BlackTag;
+import com.vuzix.ultralite.sample.tags.BlueTag;
 import com.vuzix.ultralite.sample.tags.PinkTag;
 import com.vuzix.ultralite.sample.tags.WhiteTag;
 
@@ -210,6 +211,7 @@ public class MainActivity extends VuzixActivity {
 
         startScanning();
     }
+
     private Message lastMessage;
 
     private void getLastMessage() {
@@ -544,13 +546,15 @@ public class MainActivity extends VuzixActivity {
     //BLUETOOTH LE BUTTONS
     private final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothManager btManager;
-    private BluetoothGatt blackGatt, whiteGatt, pinkGatt;
+    private BluetoothGatt blackGatt, whiteGatt, pinkGatt, blueGatt;
     BluetoothAdapter.LeScanCallback leScanCallback = (device, rssi, scanRecord) -> {
         switch (device.getAddress()) {
             case BlackTag.mac:
                 BlackTag.device = device;
             case PinkTag.mac:
                 PinkTag.device = device;
+            case BlueTag.mac:
+                BlueTag.device = device;
             case WhiteTag.mac:
                 WhiteTag.device = device;
                 if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -574,11 +578,13 @@ public class MainActivity extends VuzixActivity {
             return;
         }
         if (device.getAddress().equals(BlackTag.mac)) {
-            blackGatt = device.connectGatt(this, false, gattCallback);
+            blackGatt = device.connectGatt(this, true, gattCallback);
         } else if (device.getAddress().equals(PinkTag.mac)) {
-            pinkGatt = device.connectGatt(this, false, gattCallback);
+            pinkGatt = device.connectGatt(this, true, gattCallback);
         } else if (device.getAddress().equals(WhiteTag.mac)) {
-            whiteGatt = device.connectGatt(this, false, gattCallback);
+            whiteGatt = device.connectGatt(this, true, gattCallback);
+        } else if (device.getAddress().equals(BlueTag.mac)) {
+            blueGatt = device.connectGatt(this, true, gattCallback);
         }
     }
 
@@ -595,9 +601,12 @@ public class MainActivity extends VuzixActivity {
                 } else if (isPinkTag(gatt)) {
                     pinkGatt.discoverServices();
                     backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
-                } else {
+                } else if (isWhiteTag(gatt)) {
                     whiteGatt.discoverServices();
                     nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+                } else if (isBlueTag(gatt)) {
+                    blueGatt.discoverServices();
+                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
                 }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.e(TAG, "DISCONNESSO CON " + getButton(gatt.getDevice().getAddress()));
@@ -610,14 +619,20 @@ public class MainActivity extends VuzixActivity {
                     pinkGatt.disconnect();
                     pinkGatt.close();
                     pinkGatt = null;
-                } else {
+                } else if (isWhiteTag(gatt)) {
                     nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
                     whiteGatt.disconnect();
                     whiteGatt.close();
                     whiteGatt = null;
+                } else if (isBlueTag(gatt)) {
+                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                    blueGatt.disconnect();
+                    blueGatt.close();
+                    blueGatt = null;
                 }
             }
         }
+
         @SuppressLint("MissingPermission")
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -639,6 +654,10 @@ public class MainActivity extends VuzixActivity {
                     tagServiceUuid = WhiteTag.servicestr;
                     tagCharacteristicUuid = WhiteTag.charactstr;
                     tagType = "WHITE";
+                } else if (device.equals(BlueTag.device)) {
+                    tagServiceUuid = PinkTag.servicestr;
+                    tagCharacteristicUuid = PinkTag.charactstr;
+                    tagType = "BLUE";
                 }
 
                 if (tagServiceUuid != null) {
@@ -673,10 +692,14 @@ public class MainActivity extends VuzixActivity {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "back action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "back action");
                 goBackPage();
-            } else {
+            } else if (isWhiteTag(gatt)){
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "next action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "next action");
                 goNextPage();
+            } else if (isBlueTag(gatt)) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "back action from button", Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "back action");
+                goBackPage();
             }
         }
 
@@ -703,20 +726,14 @@ public class MainActivity extends VuzixActivity {
 
     @SuppressLint("MissingPermission")
     private void stopScanning() {
-        if (blackGatt != null) {
-            blackGatt.close();
-            blackGatt.disconnect();
-        }
-        if (whiteGatt != null) {
-            whiteGatt.close();
-            whiteGatt.disconnect();
-        }
-        if (pinkGatt != null) {
-            pinkGatt.close();
-            pinkGatt.disconnect();
-        }
-        if (bluetoothAdapter != null && leScanCallback != null) {
-            bluetoothAdapter.stopLeScan(leScanCallback);
-        }
+        blackGatt.close();
+        blackGatt.disconnect();
+        whiteGatt.close();
+        whiteGatt.disconnect();
+        pinkGatt.close();
+        pinkGatt.disconnect();
+        blueGatt.close();
+        blueGatt.disconnect();
+        bluetoothAdapter.stopLeScan(leScanCallback);
     }
 }

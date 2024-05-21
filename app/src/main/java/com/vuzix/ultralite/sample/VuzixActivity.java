@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.vuzix.ultralite.sample.tags.BlackTag;
+import com.vuzix.ultralite.sample.tags.BlueTag;
 import com.vuzix.ultralite.sample.tags.PinkTag;
 import com.vuzix.ultralite.sample.tags.WhiteTag;
 
@@ -155,6 +156,9 @@ public class VuzixActivity extends AppCompatActivity {
         if (address.equals(PinkTag.mac)) {
             return "PINK TAG";
         }
+        if (address.equals(BlueTag.mac)) {
+            return "BLUE TAG";
+        }
         return null;
     }
 
@@ -164,5 +168,13 @@ public class VuzixActivity extends AppCompatActivity {
 
     public boolean isPinkTag(BluetoothGatt gatt) {
         return gatt.getDevice().getAddress().equals(PinkTag.mac);
+    }
+
+    public boolean isWhiteTag(BluetoothGatt gatt) {
+        return gatt.getDevice().getAddress().equals(WhiteTag.mac);
+    }
+
+    public boolean isBlueTag(BluetoothGatt gatt) {
+        return gatt.getDevice().getAddress().equals(BlueTag.mac);
     }
 }
