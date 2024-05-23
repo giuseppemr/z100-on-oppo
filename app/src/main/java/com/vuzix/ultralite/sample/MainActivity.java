@@ -26,6 +26,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -42,6 +43,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.genki.wave.BatteryStatus;
+import com.genki.wave.ButtonEvent;
+import com.genki.wave.Datastream;
+import com.genki.wave.WaveApiDevice;
+import com.genki.wave.WaveApiListener;
 import com.vuzix.ultralite.Anchor;
 import com.vuzix.ultralite.LVGLImage;
 import com.vuzix.ultralite.Layout;
@@ -54,6 +60,7 @@ import com.vuzix.ultralite.sample.tags.BlueTag;
 import com.vuzix.ultralite.sample.tags.PinkTag;
 import com.vuzix.ultralite.sample.tags.WhiteTag;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -62,7 +69,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends VuzixActivity {
+public class MainActivity extends VuzixActivity implements WaveApiListener {
 
     private static final String TAG = MainActivity.class.getName();
     private Model model;
@@ -70,6 +77,7 @@ public class MainActivity extends VuzixActivity {
     private ImageView loginImageView, nextBleCheckView, backBleCheckView;
     private Button next, back;
 
+    @SuppressLint("WakelockTimeout")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,6 +156,9 @@ public class MainActivity extends VuzixActivity {
 
         if (allPermissionsGranted) {
             start();
+            btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
+            startScanning();
         } else {
             ActivityCompat.requestPermissions(this, permissions, requestCode);
         }
@@ -206,10 +217,6 @@ public class MainActivity extends VuzixActivity {
         next.setOnClickListener(view -> goNextPage());
 
         back.setOnClickListener(view -> goBackPage());
-
-        btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-
-        startScanning();
     }
 
     private Message lastMessage;
@@ -304,6 +311,53 @@ public class MainActivity extends VuzixActivity {
 
         // Impostare il testo con lo stile applicato alla TextView
         textView.setText(builder);
+    }
+
+    @Override
+    public void onWaveConnected(BluetoothDevice device) {
+        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+        stopScanning();
+    }
+
+    @Override
+    public void onWaveDisconnected(BluetoothDevice device) {
+        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+        wave = null;
+        startScanning();
+    }
+
+    Datastream latestDatastream;
+
+    @Override
+    public void onDatastream(Datastream datastream) {
+        latestDatastream = datastream;
+    }
+
+    @Override
+    public void onButtonEvent(ButtonEvent buttonEvent) {
+        if (buttonEvent.action == ButtonEvent.Action.Down) {
+            switch (buttonEvent.id) {
+                case ButtonEvent.Id.A:
+                    Log.e(TAG, "Clicked top button");
+                    goBackPage();
+                    break;
+                case ButtonEvent.Id.B:
+                    Log.e(TAG, "Clicked middle button");
+                    break;
+                case ButtonEvent.Id.C:
+                    Log.e(TAG, "Clicked bottom button");
+                    goNextPage();
+                    break;
+            }
+        }
+
+    }
+
+    BatteryStatus latestBatteryStatus;
+
+    @Override
+    public void onBatteryStatus(BatteryStatus batteryStatus) {
+        latestBatteryStatus = batteryStatus;
     }
 
     public static class Model extends AndroidViewModel {
@@ -547,7 +601,18 @@ public class MainActivity extends VuzixActivity {
     private final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothManager btManager;
     private BluetoothGatt blackGatt, whiteGatt, pinkGatt, blueGatt;
+    private WaveApiDevice wave;
+
     BluetoothAdapter.LeScanCallback leScanCallback = (device, rssi, scanRecord) -> {
+        @SuppressLint("MissingPermission") String name = device.getName();
+        String address = device.getAddress();
+
+        if (name != null && name.contains("Wave") && wave == null) {
+            Log.e(TAG, "Found Wave device: " + name + " (" + address + ")");
+            wave = new WaveApiDevice(this, device, this);
+            return;
+        }
+
         switch (device.getAddress()) {
             case BlackTag.mac:
                 BlackTag.device = device;
@@ -692,7 +757,7 @@ public class MainActivity extends VuzixActivity {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "back action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "back action");
                 goBackPage();
-            } else if (isWhiteTag(gatt)){
+            } else if (isWhiteTag(gatt)) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "next action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "next action");
                 goNextPage();

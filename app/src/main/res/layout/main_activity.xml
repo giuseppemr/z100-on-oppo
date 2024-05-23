@@ -117,9 +117,9 @@
             tools:ignore="UseCompoundDrawables">
 
             <TextView
-                android:text="NEXT"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:text="GENKI" />
             <ImageView
                 android:id="@+id/next"
                 android:src="@drawable/baseline_check_box_outline_blank_24"
@@ -129,22 +129,24 @@
         </LinearLayout>
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone"
             tools:ignore="UseCompoundDrawables">
 
             <TextView
-                android:text="BACK"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <ImageView
-                android:id="@+id/back"
-                android:src="@drawable/baseline_check_box_outline_blank_24"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="BACK" />
+
+            <ImageView
+                android:id="@+id/back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/baseline_check_box_outline_blank_24"
                 tools:ignore="ContentDescription" />
         </LinearLayout>
 
