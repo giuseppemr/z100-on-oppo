@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.vuzix.ultralite.sample"
-    compileSdk = 34
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.vuzix.ultralite.sample"
-        minSdk = 31
-        targetSdk = 34
+        minSdk = 30
+        targetSdk = 33
         versionCode = 2
         versionName = "1.3"
         archivesName.set("z100-$versionName-genki")
@@ -41,7 +41,7 @@ android {
 
 dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.android.material:material:1.8.0")
     implementation("com.vuzix:ultralite-sdk-android:1.2")
 
     //Retrofit
