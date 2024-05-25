@@ -74,7 +74,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
     private static final String TAG = MainActivity.class.getName();
     private Model model;
     private TextView currentText;
-    private ImageView loginImageView, nextBleCheckView, backBleCheckView;
+    private ImageView loginImageView, nextBleCheckView, backBleCheckView, genkiBleCheckView;
     private Button next, back;
 
     @SuppressLint("WakelockTimeout")
@@ -96,6 +96,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
         currentText = findViewById(R.id.current);
         nextBleCheckView = findViewById(R.id.next);
         backBleCheckView = findViewById(R.id.back);
+        genkiBleCheckView = findViewById(R.id.genki);
         next = findViewById(R.id.go_next);
         back = findViewById(R.id.go_back);
         ImageView connectedImageView = findViewById(R.id.connected);
@@ -315,15 +316,15 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
 
     @Override
     public void onWaveConnected(BluetoothDevice device) {
-        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
-        stopScanning();
+        genkiBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+        //stopScanning();
     }
 
     @Override
     public void onWaveDisconnected(BluetoothDevice device) {
-        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+        genkiBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
         wave = null;
-        startScanning();
+        //startScanning();
     }
 
     Datastream latestDatastream;
