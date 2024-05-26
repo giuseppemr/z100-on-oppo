@@ -259,13 +259,9 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
 
     private boolean goNextPage() {
         Log.d(TAG, "received next action");
+        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         if (strings != null && strings.length > 0) {
-            page++;
             if (page == pages) {
-                page = 0;
-                pages = 0;
-                strings = null;
-                saveVariables(MainActivity.this, new String[]{}, pages, page);
                 updateTextOnScreen("");
                 setTextWithBold(currentText, "", "");
                 return true;
@@ -273,13 +269,14 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
             updateTextOnScreen(strings[page]);
             saveVariables(MainActivity.this, strings, pages, page);
             setTextWithBold(currentText, String.join("", strings), strings[page]);
+            page++;
         }
-        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         return false;
     }
 
     private boolean goBackPage() {
         Log.d(TAG, "received back action");
+        backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         if (strings != null && strings.length > 0) {
             if (page > 0) {
                 page--;
@@ -288,7 +285,6 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                 setTextWithBold(currentText, String.join("", strings), strings[page]);
             }
         }
-        backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         return false;
     }
 
