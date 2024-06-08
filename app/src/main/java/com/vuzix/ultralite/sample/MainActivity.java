@@ -389,7 +389,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                         ultralite.setFont(null, Typeface.NORMAL, 36);
                         ultralite.setLayout(Layout.CANVAS, 0, true);
 
-                        int textId = ultralite.getCanvas().createText(message, TextAlignment.CENTER, UltraliteColor.WHITE, Anchor.CENTER, 50, 0, 500, -1, TextWrapMode.WRAP, true);
+                        int textId = ultralite.getCanvas().createText(message, TextAlignment.AUTO, UltraliteColor.WHITE, Anchor.CENTER, 50, 0, 500, -1, TextWrapMode.WRAP, true);
                         if (textId == -1) {
                             throw new Stop(true);
                         }
