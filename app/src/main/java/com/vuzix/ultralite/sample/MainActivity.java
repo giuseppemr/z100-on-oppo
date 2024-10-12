@@ -266,10 +266,12 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                 setTextWithBold(currentText, "", "");
                 return true;
             }
-            updateTextOnScreen(strings[page]);
-            saveVariables(MainActivity.this, strings, pages, page);
-            setTextWithBold(currentText, String.join("", strings), strings[page]);
-            page++;
+            if (page!=pages-1){
+                page++;
+                updateTextOnScreen(strings[page]);
+                saveVariables(MainActivity.this, strings, pages, page);
+                setTextWithBold(currentText, String.join("", strings), strings[page]);
+            }
         }
         return false;
     }
@@ -340,10 +342,10 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                     break;
                 case ButtonEvent.Id.B:
                     Log.e(TAG, "Clicked middle button");
+                    goNextPage();
                     break;
                 case ButtonEvent.Id.C:
                     Log.e(TAG, "Clicked bottom button");
-                    goNextPage();
                     break;
             }
         }
