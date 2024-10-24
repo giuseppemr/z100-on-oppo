@@ -172,27 +172,6 @@
                 tools:ignore="ContentDescription" />
         </LinearLayout>
 
-        <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center_vertical"
-            tools:ignore="UseCompoundDrawables">
-
-            <TextView
-                android:textStyle="bold"
-                android:text="MESSAGGIO SU OCCHIALE"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:text=""
-                android:id="@+id/current"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                tools:ignore="ContentDescription" />
-        </LinearLayout>
-
         <Button
             android:id="@+id/run_demo"
             android:layout_width="wrap_content"
@@ -213,6 +192,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="BACK" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            tools:ignore="UseCompoundDrawables">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MESSAGGIO SU OCCHIALE"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/current"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                tools:ignore="ContentDescription" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/send_notification"

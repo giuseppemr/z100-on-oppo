@@ -315,14 +315,17 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
     @Override
     public void onWaveConnected(BluetoothDevice device) {
         genkiBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
-        //stopScanning();
+        stopScanning();
+        Log.e(TAG, "onWaveConnected: ", null);
     }
+
 
     @Override
     public void onWaveDisconnected(BluetoothDevice device) {
         genkiBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
         wave = null;
-        //startScanning();
+        startScanning();
+        Log.e(TAG, "onWaveDisconnected: ", null);
     }
 
     Datastream latestDatastream;
@@ -334,6 +337,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
 
     @Override
     public void onButtonEvent(ButtonEvent buttonEvent) {
+        genkiBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
         if (buttonEvent.action == ButtonEvent.Action.Down) {
             switch (buttonEvent.id) {
                 case ButtonEvent.Id.A:
@@ -790,14 +794,18 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
 
     @SuppressLint("MissingPermission")
     private void stopScanning() {
-        blackGatt.close();
-        blackGatt.disconnect();
-        whiteGatt.close();
-        whiteGatt.disconnect();
-        pinkGatt.close();
-        pinkGatt.disconnect();
-        blueGatt.close();
-        blueGatt.disconnect();
-        bluetoothAdapter.stopLeScan(leScanCallback);
+        try {
+            blackGatt.close();
+            blackGatt.disconnect();
+            whiteGatt.close();
+            whiteGatt.disconnect();
+            pinkGatt.close();
+            pinkGatt.disconnect();
+            blueGatt.close();
+            blueGatt.disconnect();
+            bluetoothAdapter.stopLeScan(leScanCallback);
+        } catch (Exception e) {
+
+        }
     }
 }
