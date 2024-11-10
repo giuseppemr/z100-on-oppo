@@ -44,7 +44,7 @@ public class VuzixActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sharedPreferences = getSharedPreferences("z100", MODE_PRIVATE);
-        loadVariables(this);
+        //loadVariables(this);
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(new RetrofitInterceptor(sharedPreferences))

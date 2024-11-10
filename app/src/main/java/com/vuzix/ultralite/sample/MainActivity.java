@@ -64,6 +64,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -230,19 +231,14 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                     if (lastMessage != null && lastMessage.equals(response.body())) {
                         Log.d(TAG, "messaggio uguale : " + response.body().getText());
                     } else {
-                        Log.d(TAG, "nuovo messaggio : " + response.body().getText());
-                        if (response.body().getText().length() > chunk) {
-                            strings = splitString(response.body().getText(), chunk);
-                            pages = strings.length;
-                            page = 0;
-                            Log.d(TAG, "diviso in pagine: " + pages);
-                            saveVariables(MainActivity.this, strings, pages, page);
-                            updateTextOnScreen(strings[page]);
-                            setTextWithBold(currentText, response.body().getText(), strings[page]);
+                        if (response.body().getText().contains("RESET")) {
+                            Log.d(TAG, "reset ricevuto");
+                            strings = new String[]{};
+                            pages = 0;
+                            updateTextOnScreen("");
+                            currentText.setText("");
                         } else {
-                            updateTextOnScreen(response.body().getText());
-                            setTextWithBold(currentText, response.body().getText(), response.body().getText());
-                            saveVariables(MainActivity.this, new String[]{response.body().getText()}, pages, page);
+                            newMessage(response);
                         }
                     }
                     lastMessage = response.body();
@@ -257,23 +253,56 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
         });
     }
 
+    private void newMessage(Response<Message> response) {
+        Log.d(TAG, "nuovo messaggio : " + response.body().getText());
+        if (response.body().getText().length() > chunk) {
+            if (strings != null && strings.length > 0) {
+                Log.d(TAG, "nuovo messaggio aggiunto in coda: " + response.body().getText());
+                String[] toAdd = splitString(response.body().getText(), chunk);
+
+                // Unire l'array `toAdd` a `strings`
+                String[] newStrings = new String[strings.length + toAdd.length];
+                System.arraycopy(strings, 0, newStrings, 0, strings.length);
+                System.arraycopy(toAdd, 0, newStrings, strings.length, toAdd.length);
+
+                // Aggiornare `strings` e `pages`
+                strings = newStrings;
+                pages = strings.length;
+                updateTextOnScreen(strings[page]);
+                setTextWithBold(currentText, String.join(",", strings), strings[page]);
+            } else {
+                strings = splitString(response.body().getText(), chunk);
+                page = 0;
+                Log.d(TAG, "diviso in pagine: " + pages);
+                //saveVariables(MainActivity.this, strings, pages, page);
+                updateTextOnScreen(strings[page]);
+                setTextWithBold(currentText, String.join(",", strings), strings[page]);
+                pages = strings.length;
+            }
+        } else {
+            updateTextOnScreen(response.body().getText());
+            setTextWithBold(currentText, response.body().getText(), response.body().getText());
+            //saveVariables(MainActivity.this, new String[]{response.body().getText()}, pages, page);
+        }
+    }
+
     private boolean goNextPage() {
         Log.d(TAG, "received next action");
         nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_24));
+
         if (strings != null && strings.length > 0) {
-            if (page == pages) {
+            if (page >= pages - 1) { // Se siamo all'ultima pagina o oltre
                 updateTextOnScreen("");
                 setTextWithBold(currentText, "", "");
-                return true;
-            }
-            if (page!=pages-1){
+                return true; // Indica che abbiamo raggiunto la fine
+            } else { // Avanza alla pagina successiva
                 page++;
                 updateTextOnScreen(strings[page]);
-                saveVariables(MainActivity.this, strings, pages, page);
                 setTextWithBold(currentText, String.join("", strings), strings[page]);
+                // saveVariables(MainActivity.this, strings, pages, page);
             }
         }
-        return false;
+        return false; // Indica che ci sono ancora pagine disponibili
     }
 
     private boolean goBackPage() {
@@ -282,7 +311,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
         if (strings != null && strings.length > 0) {
             if (page > 0) {
                 page--;
-                saveVariables(MainActivity.this, new String[]{}, pages, page);
+                //saveVariables(MainActivity.this, new String[]{}, pages, page);
                 updateTextOnScreen(strings[page]);
                 setTextWithBold(currentText, String.join("", strings), strings[page]);
             }
