@@ -231,7 +231,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                     if (lastMessage != null && lastMessage.equals(response.body())) {
                         Log.d(TAG, "messaggio uguale : " + response.body().getText());
                     } else {
-                        if (response.body().getText().contains("RESET")) {
+                        if (response.body().getText().contains("RESET") && response.body().getText().length() == 5) {
                             Log.d(TAG, "reset ricevuto");
                             strings = new String[]{};
                             pages = 0;
