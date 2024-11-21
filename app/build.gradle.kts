@@ -13,8 +13,8 @@ android {
         applicationId = "com.vuzix.ultralite.sample"
         minSdk = 30
         targetSdk = 33
-        versionCode = 13
-        versionName = "1.13"
+        versionCode = 14
+        versionName = "1.14"
         archivesName.set("z100-$versionName-genki")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -375,10 +375,10 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                     break;
                 case ButtonEvent.Id.B:
                     Log.e(TAG, "Clicked middle button");
-                    goNextPage();
                     break;
                 case ButtonEvent.Id.C:
                     Log.e(TAG, "Clicked bottom button");
+                    goNextPage();
                     break;
             }
         }
