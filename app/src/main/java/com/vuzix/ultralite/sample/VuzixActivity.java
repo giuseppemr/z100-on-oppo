@@ -61,7 +61,7 @@ public class VuzixActivity extends AppCompatActivity {
 
         api = retrofit.create(Api.class);
 
-        login = api.login(new LoginRequest("super_admin@lostotores.it", "superadmin451."));
+        login = api.login(new LoginRequest("super_admin@lostotores.it", "Stargate451451."));
 
 
 
