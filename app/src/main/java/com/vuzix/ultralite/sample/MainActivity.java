@@ -266,7 +266,7 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                 setTextWithBold(currentText, "", "");
                 return true;
             }
-            if (page!=pages-1){
+            if (page != pages - 1) {
                 page++;
                 updateTextOnScreen(strings[page]);
                 saveVariables(MainActivity.this, strings, pages, page);
@@ -660,11 +660,11 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
-                Log.e(TAG, "CONNESSO CON " + getButton(gatt.getDevice().getAddress()));
+                // Gestione della connessione: scopri i servizi
                 if (isBlackTag(gatt)) {
+                    if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
                     blackGatt.discoverServices();
                 } else if (isPinkTag(gatt)) {
                     pinkGatt.discoverServices();
@@ -678,26 +678,37 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
                 }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.e(TAG, "DISCONNESSO CON " + getButton(gatt.getDevice().getAddress()));
-                if (isBlackTag(gatt)) {
-                    blackGatt.disconnect();
-                    blackGatt.close();
-                    blackGatt = null;
-                } else if (isPinkTag(gatt)) {
-                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
-                    pinkGatt.disconnect();
-                    pinkGatt.close();
-                    pinkGatt = null;
-                } else if (isWhiteTag(gatt)) {
-                    nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
-                    whiteGatt.disconnect();
-                    whiteGatt.close();
-                    whiteGatt = null;
-                } else if (isBlueTag(gatt)) {
-                    backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
-                    blueGatt.disconnect();
-                    blueGatt.close();
-                    blueGatt = null;
-                }
+                // Pianifica una disconnessione ritardata per consentire la stabilizzazione
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (isBlackTag(gatt)) {
+                        if (blackGatt != null) {
+                            blackGatt.disconnect();
+                            blackGatt.close();
+                            blackGatt = null;
+                        }
+                    } else if (isPinkTag(gatt)) {
+                        backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                        if (pinkGatt != null) {
+                            pinkGatt.disconnect();
+                            pinkGatt.close();
+                            pinkGatt = null;
+                        }
+                    } else if (isWhiteTag(gatt)) {
+                        nextBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                        if (whiteGatt != null) {
+                            whiteGatt.disconnect();
+                            whiteGatt.close();
+                            whiteGatt = null;
+                        }
+                    } else if (isBlueTag(gatt)) {
+                        backBleCheckView.setImageDrawable(getDrawable(R.drawable.baseline_check_box_outline_blank_24));
+                        if (blueGatt != null) {
+                            blueGatt.disconnect();
+                            blueGatt.close();
+                            blueGatt = null;
+                        }
+                    }
+                }, 300);
             }
         }
 
@@ -751,8 +762,20 @@ public class MainActivity extends VuzixActivity implements WaveApiListener {
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            // Questo metodo viene chiamato quando i dati notificati sono ricevuti.
             byte[] data = characteristic.getValue();
+            if (data == null || data.length == 0) {
+                Log.e(TAG, "Ricevuto valore nullo o vuoto dalla caratteristica");
+                return;
+            }
+
+            // Ad esempio, supponiamo che il primo byte indichi il tipo di pulsante
+            int buttonCode = data[0] & 0xFF; // conversione a unsigned int
+            // Controlla se il codice corrisponde a uno dei pulsanti attesi
+            if (buttonCode < 1 || buttonCode > 3) {
+                Log.e(TAG, "Valore inatteso per il pulsante: " + buttonCode);
+                return;
+            }
+
             if (isBlackTag(gatt)) {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "foto action from button", Toast.LENGTH_SHORT).show());
                 Log.e(TAG, "foto action");
