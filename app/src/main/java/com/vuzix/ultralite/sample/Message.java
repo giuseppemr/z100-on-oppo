@@ -8,6 +8,8 @@ public class Message {
     private final String photo;
     private final MessageType type;
 
+    private String action;
+
     public Message(String text, String timestamp, String photo, MessageType type) {
         this.text = text;
         this.timestamp = timestamp;
@@ -31,26 +33,20 @@ public class Message {
         return type;
     }
 
+    public String getAction() {
+        return action;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Message message = (Message) o;
-
-        if (!Objects.equals(text, message.text)) return false;
-        if (!Objects.equals(timestamp, message.timestamp))
-            return false;
-        if (!Objects.equals(photo, message.photo)) return false;
-        return type == message.type;
+        return Objects.equals(text, message.text) && Objects.equals(timestamp, message.timestamp) && Objects.equals(photo, message.photo) && type == message.type && Objects.equals(action, message.action);
     }
 
     @Override
     public int hashCode() {
-        int result = text != null ? text.hashCode() : 0;
-        result = 31 * result + (timestamp != null ? timestamp.hashCode() : 0);
-        result = 31 * result + (photo != null ? photo.hashCode() : 0);
-        result = 31 * result + (type != null ? type.hashCode() : 0);
-        return result;
+        return Objects.hash(text, timestamp, photo, type, action);
     }
 }

@@ -13,7 +13,7 @@ android {
         applicationId = "com.vuzix.ultralite.sample"
         minSdk = 30
         targetSdk = 33
-        versionCode = 9
+        versionCode = 16
         versionName = "2.0"
         archivesName.set("z100-$versionName-genki")
 
